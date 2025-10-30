@@ -1,0 +1,55 @@
+name: GetACTV
+on:
+  schedule:
+    # Ejecuta cada 12 horas (0, 12 UTC)
+    - cron: '0 */12 * * *'
+  workflow_dispatch:  # Permite ejecutarlo manualmente desde GitHub
+
+jobs:
+  execute-notebook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install jupyter nbconvert papermill pandas numpy requests beautifulsoup4 selenium webdriver-manager
+
+      - name: Ejecutar notebook con nbconvert
+        run: |
+          jupyter nbconvert --to notebook --execute \
+            --inplace \
+            --allow-errors \
+            --ExecutePreprocessor.timeout=600 \
+            "GetACTV.ipynb"
+
+      - name: Subir notebook ejecutado como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: GetACTV-resultados-${{ github.run_number }}
+          path: |
+            GetACTV.ipynb
+            *.csv
+            *.json
+            *.png
+            output/
+          retention-days: 7
+
+      - name: Commit y push si hay cambios (opcional)
+        if: always()
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add .
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update: resultados de GetACTV [skip ci]"
+          git push || echo "Nada que subir"
