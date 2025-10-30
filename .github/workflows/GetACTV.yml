@@ -33,7 +33,7 @@ jobs:
             --ExecutePreprocessor.timeout=600 \
             "GetACTV.ipynb"
 
-      - name: Subir notebook ejecutado como artefacto
+      - name: Subir resultados como artefacto (sin push)
         uses: actions/upload-artifact@v4
         with:
           name: GetACTV-resultados-${{ github.run_number }}
@@ -41,8 +41,10 @@ jobs:
             GetACTV.ipynb
             *.csv
             *.json
+            *.txt
             *.png
             output/
+            data/
           retention-days: 7
 
       - name: Commit y push si hay cambios (opcional)
